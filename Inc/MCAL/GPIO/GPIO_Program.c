@@ -32,6 +32,7 @@ stm_err_t GPIO_INPUT_CONFIG(GPIO_PORTS ePort, uint8_t nPin, INPUT_CNF eCnf) {
     	return STM_ERROR;
 
     volatile uint32_t* pConfigReg;
+    volatile uint32_t* pODR_Reg;
     uint8_t nBitPos;
     // STEP 1
     if (nPin < 8) {
@@ -40,15 +41,18 @@ stm_err_t GPIO_INPUT_CONFIG(GPIO_PORTS ePort, uint8_t nPin, INPUT_CNF eCnf) {
         // Port Selection
         switch(ePort) {
             case PORTA:
-            	pConfigReg = &GPIOA_CRL;
+            	pConfigReg 	= &GPIOA_CRL;
+            	pODR_Reg	= &GPIOA_ODR;
             	break;
 
             case PORTB:
-            	pConfigReg = &GPIOB_CRL;
+            	pConfigReg 	= &GPIOB_CRL;
+            	pODR_Reg	= &GPIOB_ODR;
             	break;
 
             case PORTC:
-            	pConfigReg = &GPIOC_CRL;
+            	pConfigReg 	= &GPIOC_CRL;
+            	pODR_Reg	= &GPIOC_ODR;
             	break;
 
             default:
@@ -62,15 +66,18 @@ stm_err_t GPIO_INPUT_CONFIG(GPIO_PORTS ePort, uint8_t nPin, INPUT_CNF eCnf) {
         // Port Selection
         switch(ePort) {
             case PORTA:
-            	pConfigReg = &GPIOA_CRH;
+            	pConfigReg 	= &GPIOA_CRH;
+            	pODR_Reg	= &GPIOA_ODR;
             	break;
 
             case PORTB:
-            	pConfigReg = &GPIOB_CRH;
+            	pConfigReg 	= &GPIOB_CRH;
+            	pODR_Reg	= &GPIOB_ODR;
             	break;
 
             case PORTC:
-            	pConfigReg = &GPIOC_CRH;
+            	pConfigReg 	= &GPIOC_CRH;
+            	pODR_Reg	= &GPIOC_ODR;
             	break;
 
             default:
@@ -88,10 +95,12 @@ stm_err_t GPIO_INPUT_CONFIG(GPIO_PORTS ePort, uint8_t nPin, INPUT_CNF eCnf) {
 
         case PULL_UP:
         	nConfigValue = 0b1000;
+        	SET_BIT(*pODR_Reg,nPin);
         	break;
 
         case PULL_DOWN:
         	nConfigValue = 0b1000;
+        	CLR_BIT(*pODR_Reg,nPin);
         	break;
 
         case ANALOG:
@@ -110,7 +119,8 @@ stm_err_t GPIO_INPUT_CONFIG(GPIO_PORTS ePort, uint8_t nPin, INPUT_CNF eCnf) {
 /*
  * Step 1: Choose CRL or CRH and calculate bit position
  * Step 2: Choose Output MODE bits
- * Step 3: Set the Configuration
+ * Step 3: Choose Output Configuration Bits
+ * Step 4: Configure the Register
  */
 stm_err_t GPIO_OUTPUT_CONFIG(GPIO_PORTS ePort, uint8_t nPin, OUTPUT_MODE eMode, OUTPUT_CNF eCnf){
 
@@ -165,47 +175,55 @@ stm_err_t GPIO_OUTPUT_CONFIG(GPIO_PORTS ePort, uint8_t nPin, OUTPUT_MODE eMode, 
 	        }
 	    }
 	    // STEP 2: Choose Output MODE bits
-	    uint8_t nConfigValue;
+	    uint8_t nModeBits;
 
 	    switch (eMode) {
 			case MAX_OUTPUT_SPEED_10MHZ:
-				nConfigValue = 0b0001;
+				nModeBits = 0b01;
 				break;
 
 			case MAX_OUTPUT_SPEED_2MHZ:
-				nConfigValue = 0b0010;
+				nModeBits = 0b10;
 				break;
 
 			case MAX_OUTPUT_SPEED_50MHZ:
-				nConfigValue = 0b0011;
+				nModeBits = 0b11;
 				break;
 
 			default:
 				return STM_ERROR;
 				break;
 		}
-	    WRITE_BITS(*pConfigReg,nConfigValue,nBitPos);
 	    // STEP 3: Set the Configuration
-	    uint8_t nConfig;
+	    uint8_t nConfigBits;
 
 	    switch (eCnf) {
 			case OPEN_DRAIN:
-
+				nConfigBits = 0b01;
 				break;
 
 			case PUSH_PULL:
-
+				nConfigBits = 0b00;
 				break;
 
 			case ALT_FN_PUSH_PULL:
-
+				nConfigBits = 0b10;
 				break;
 
 			case ALT_FN_OPEN_DRAIN:
-
+				nConfigBits = 0b11;
 				break;
+
 			default:
+				return STM_ERROR;
 				break;
 		}
+	    // STEP 4
 
+	    //Combine the MODE and CNF bits
+	    uint8_t nConfigVal = (nConfigBits<<2) | nModeBits;
+	    // Clear Register from previous Config
+	    CLR_BITS(*pConfigReg, 0xF, nBitPos);
+	    // Write new Config
+	    WRITE_BITS(*pConfigReg, nConfigVal, nBitPos);
 return STM_OK;}
