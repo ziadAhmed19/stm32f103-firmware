@@ -4,18 +4,6 @@
  *  Created on: Dec 13, 2025
  *      Author: ziad-ahmed
  *
- * General Purpose IO (GPIO) Ports, can be individually configured by software
- * in several modes:
- * 1- Input Floating 	(Input)
- * 2- Input pull-up		(Input)
- * 3- Input pull-down	(Input)
- * 4- Analog			(Input)
- *
- * 5- Output open-drain				(Output)
- * 6- Output push-pull				(Output)
- * 7- Alternate function push-pull  (Output)
- * 8- Alternate function open-drain (Output)
- *
  */
 #include 	"GPIO_Interface.h"
 #include 	"GPIO_Private.h"
@@ -114,6 +102,31 @@ stm_err_t GPIO_INPUT_CONFIG(GPIO_PORTS ePort, uint8_t nPin, INPUT_CNF eCnf) {
     WRITE_BITS(*pConfigReg, nConfigValue, nBitPos);
 
     return STM_OK;
+}
+
+stm_err_t GPIO_INPUT_READ(GPIO_PORTS ePort, uint8_t nPin){
+
+	if(nPin > 15)
+		return STM_ERROR;
+
+	switch (ePort) {
+		case PORTA:
+			GET_BIT(GPIOA_IDR,nPin);
+			break;
+
+		case PORTB:
+			GET_BIT(GPIOB_IDR,nPin);
+			break;
+
+		case PORTC:
+			GET_BIT(GPIOC_IDR,nPin);
+			break;
+
+		default:
+			return STM_ERROR;
+			break;
+	}
+	return STM_OK;
 }
 
 /*
@@ -227,3 +240,5 @@ stm_err_t GPIO_OUTPUT_CONFIG(GPIO_PORTS ePort, uint8_t nPin, OUTPUT_MODE eMode, 
 	    // Write new Config
 	    WRITE_BITS(*pConfigReg, nConfigVal, nBitPos);
 return STM_OK;}
+
+
