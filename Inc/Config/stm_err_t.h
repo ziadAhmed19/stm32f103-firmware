@@ -30,5 +30,6 @@ typedef int stm_err_t;
 // Function Prototypes
 char* stm_err_to_name(stm_err_t ERROR_CODE);
 void STM_CHECK_ERROR(stm_err_t returned_valueFrom_function);
+stm_err_t STM_CHECK_ERROR_WITHOUT_ABORT(stm_err_t returned_valueFrom_function);
 
 #endif /* CONFIG_STM_ERR_T_H_ */
